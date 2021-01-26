@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="SpeedLimitView">
+        <item name="speedLimitTextColor">?attr/speedLimitTextColor</item>
+        <item name="speedLimitMutcdBorderColor">?attr/speedLimitMutcdBorderColor</item>
+        <item name="speedLimitBackgroundColor">?attr/speedLimitBackgroundColor</item>
+        <item name="speedLimitViennaBorderColor">?attr/speedLimitViennaBorderColor</item>
+    </style>
+</resources>

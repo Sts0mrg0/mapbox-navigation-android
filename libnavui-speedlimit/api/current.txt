@@ -1,0 +1,32 @@
+// Signature format: 3.0
+package com.mapbox.navigation.ui.speedlimit.api {
+
+  public final class MapboxSpeedLimitApi implements com.mapbox.navigation.ui.base.api.speedlimit.SpeedLimitApi {
+    ctor public MapboxSpeedLimitApi(com.mapbox.navigation.ui.base.formatter.ValueFormatter<? super com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.UpdateSpeedLimit,java.lang.String> formatter);
+    method public com.mapbox.navigation.ui.base.formatter.ValueFormatter<com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.UpdateSpeedLimit,java.lang.String> getFormatter();
+    method public com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.Visibility getVisibility();
+    method public com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.Visibility.Hidden hide();
+    method public void setFormatter(com.mapbox.navigation.ui.base.formatter.ValueFormatter<? super com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.UpdateSpeedLimit,java.lang.String> p);
+    method public com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.Visibility.Visible show();
+    method public com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.UpdateSpeedLimit updateSpeedLimit(com.mapbox.navigation.base.speed.model.SpeedLimit speedLimit);
+    property public final com.mapbox.navigation.ui.base.formatter.ValueFormatter<com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.UpdateSpeedLimit,java.lang.String> formatter;
+    property public final com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState.Visibility visibility;
+  }
+
+}
+
+package com.mapbox.navigation.ui.speedlimit.view {
+
+  public final class MapboxSpeedLimitView extends android.widget.FrameLayout implements com.mapbox.navigation.ui.base.MapboxView<com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState> {
+    ctor public MapboxSpeedLimitView(android.content.Context context);
+    ctor public MapboxSpeedLimitView(android.content.Context context, android.util.AttributeSet? attrs);
+    ctor public MapboxSpeedLimitView(android.content.Context context, android.util.AttributeSet? attrs, int defStyleAttr);
+    method public void render(com.mapbox.navigation.ui.base.model.speedlimit.SpeedLimitState state);
+    field public static final com.mapbox.navigation.ui.speedlimit.view.MapboxSpeedLimitView.Companion Companion;
+  }
+
+  public static final class MapboxSpeedLimitView.Companion {
+  }
+
+}
+
