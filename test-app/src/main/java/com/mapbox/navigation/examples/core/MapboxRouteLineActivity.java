@@ -198,7 +198,7 @@ public class MapboxRouteLineActivity extends AppCompatActivity implements OnMapL
             }
             routeArrowView.render(style, arrowVisibilityState);
 
-            RouteArrowState.UpdateManeuverArrowState redrawState = routeArrow.redraw();
+            RouteArrowState.ArrowModificationState.ArrowAddedState redrawState = routeArrow.redraw();
             routeArrowView.render(style, redrawState);
           }
         }, null);
@@ -417,7 +417,7 @@ public class MapboxRouteLineActivity extends AppCompatActivity implements OnMapL
       }
       mapboxRouteLineApi.updateWithRouteProgress(routeProgress);
 
-      RouteArrowState.UpdateManeuverArrowState updateArrowState = routeArrow.updateUpcomingManeuverArrow(routeProgress);
+      RouteArrowState.UpdateManeuverArrowState updateArrowState = routeArrow.addUpcomingManeuverArrow(routeProgress);
       routeArrowView.render(mapboxMap.getStyle(), updateArrowState);
 
       DirectionsRoute currentRoute = routeProgress.getRoute();

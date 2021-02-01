@@ -1,11 +1,12 @@
 package com.mapbox.navigation.ui.maps.route.arrow.api
 
 import com.mapbox.geojson.Feature
+import com.mapbox.geojson.FeatureCollection
 import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.layers.getLayer
 import com.mapbox.maps.extension.style.layers.properties.generated.Visibility
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
-import com.mapbox.maps.extension.style.sources.getSource
+import com.mapbox.maps.extension.style.sources.getSourceAs
 import com.mapbox.navigation.ui.base.internal.model.route.RouteConstants
 import com.mapbox.navigation.ui.base.model.route.RouteLayerConstants
 import com.mapbox.navigation.ui.maps.internal.route.line.MapboxRouteLineUtils
@@ -23,7 +24,7 @@ import com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState
 class MapboxRouteArrowView(private val options: RouteArrowOptions) {
 
     /**
-     * Renders a UpdateRouteArrowVisibilityState applying view side effects based on the data
+     * Renders a [RouteArrowState.UpdateRouteArrowVisibilityState] applying view side effects based on the data
      * it contains.
      *
      * @param style a valid map style object
@@ -38,7 +39,7 @@ class MapboxRouteArrowView(private val options: RouteArrowOptions) {
     }
 
     /**
-     * Renders a UpdateManeuverArrowState applying view side effects based on the data
+     * Renders a [RouteArrowState.UpdateManeuverArrowState] applying view side effects based on the data
      * it contains.
      *
      * @param style a valid map style object
@@ -57,6 +58,57 @@ class MapboxRouteArrowView(private val options: RouteArrowOptions) {
 
         state.getArrowShaftFeature()?.apply {
             updateSource(style, RouteConstants.ARROW_SHAFT_SOURCE_ID, this)
+        }
+    }
+
+    /**
+     * Renders a [RouteArrowState.ArrowModificationState]
+     *
+     * @param style a valid map style object
+     * @param state a state containing data for applying the view side effects.
+     */
+    fun render(style: Style, state: RouteArrowState.ArrowModificationState) {
+        initializeLayers(style, options)
+
+        when (state) {
+            is RouteArrowState.ArrowModificationState.InvalidPointErrorState -> {}
+            is RouteArrowState.ArrowModificationState.AlreadyPresentErrorState -> {}
+            is RouteArrowState.ArrowModificationState.ArrowAddedState -> {
+                updateSource(
+                    style,
+                    RouteConstants.ARROW_SHAFT_SOURCE_ID,
+                    state.getArrowShaftFeatureCollection()
+                )
+                updateSource(
+                    style,
+                    RouteConstants.ARROW_HEAD_SOURCE_ID,
+                    state.getArrowHeadFeatureCollection()
+                )
+            }
+            is RouteArrowState.ArrowModificationState.ArrowRemovedState -> {
+                updateSource(
+                    style,
+                    RouteConstants.ARROW_SHAFT_SOURCE_ID,
+                    state.getArrowShaftFeatureCollection()
+                )
+                updateSource(
+                    style,
+                    RouteConstants.ARROW_HEAD_SOURCE_ID,
+                    state.getArrowHeadFeatureCollection()
+                )
+            }
+            is RouteArrowState.ArrowModificationState.ClearArrowsState -> {
+                updateSource(
+                    style,
+                    RouteConstants.ARROW_SHAFT_SOURCE_ID,
+                    state.getArrowShaftFeatureCollection()
+                )
+                updateSource(
+                    style,
+                    RouteConstants.ARROW_HEAD_SOURCE_ID,
+                    state.getArrowHeadFeatureCollection()
+                )
+            }
         }
     }
 
@@ -81,10 +133,14 @@ class MapboxRouteArrowView(private val options: RouteArrowOptions) {
     }
 
     private fun updateSource(style: Style, sourceId: String, feature: Feature) {
-        if (style.isFullyLoaded()) {
-            style.getSource(sourceId)?.let {
-                (it as GeoJsonSource).feature(feature)
-            }
+        if (style.isFullyLoaded() && style.styleSourceExists(sourceId)) {
+            style.getSourceAs<GeoJsonSource>(sourceId)?.feature(feature)
+        }
+    }
+
+    private fun updateSource(style: Style, sourceId: String, featureCollection: FeatureCollection) {
+        if (style.isFullyLoaded() && style.styleSourceExists(sourceId)) {
+            style.getSourceAs<GeoJsonSource>(sourceId)?.featureCollection(featureCollection)
         }
     }
 }

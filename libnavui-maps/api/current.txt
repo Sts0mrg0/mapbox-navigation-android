@@ -289,10 +289,14 @@ package com.mapbox.navigation.ui.maps.route.arrow.api {
 
   public final class MapboxRouteArrowApi {
     ctor public MapboxRouteArrowApi();
+    method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState addArrow(java.util.List<com.mapbox.geojson.Point> points);
+    method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.UpdateManeuverArrowState addUpcomingManeuverArrow(com.mapbox.navigation.base.trip.model.RouteProgress routeProgress);
+    method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState.ClearArrowsState clearArrows();
+    method public java.util.List<java.util.List<com.mapbox.geojson.Point>> getArrows();
     method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.UpdateRouteArrowVisibilityState hideManeuverArrow();
-    method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.UpdateManeuverArrowState redraw();
+    method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState.ArrowAddedState redraw();
+    method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState.ArrowRemovedState removeArrow(java.util.List<com.mapbox.geojson.Point> points);
     method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.UpdateRouteArrowVisibilityState showManeuverArrow();
-    method public com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.UpdateManeuverArrowState updateUpcomingManeuverArrow(com.mapbox.navigation.base.trip.model.RouteProgress routeProgress);
   }
 
   public final class MapboxRouteArrowView {
@@ -300,6 +304,7 @@ package com.mapbox.navigation.ui.maps.route.arrow.api {
     method public com.mapbox.maps.extension.style.layers.properties.generated.Visibility? getVisibility(com.mapbox.maps.Style style);
     method public void render(com.mapbox.maps.Style style, com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.UpdateRouteArrowVisibilityState state);
     method public void render(com.mapbox.maps.Style style, com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.UpdateManeuverArrowState state);
+    method public void render(com.mapbox.maps.Style style, com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState state);
   }
 
 }
@@ -334,6 +339,36 @@ package com.mapbox.navigation.ui.maps.route.arrow.model {
   }
 
   public abstract sealed class RouteArrowState implements com.mapbox.navigation.ui.base.MapboxState {
+  }
+
+  public abstract static sealed class RouteArrowState.ArrowModificationState extends com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState {
+  }
+
+  public static final class RouteArrowState.ArrowModificationState.AlreadyPresentErrorState extends com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState {
+    ctor public RouteArrowState.ArrowModificationState.AlreadyPresentErrorState();
+  }
+
+  public static final class RouteArrowState.ArrowModificationState.ArrowAddedState extends com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState {
+    ctor public RouteArrowState.ArrowModificationState.ArrowAddedState(com.mapbox.geojson.FeatureCollection arrowShaftFeatureCollection, com.mapbox.geojson.FeatureCollection arrowHeadFeatureCollection);
+    method public com.mapbox.geojson.FeatureCollection getArrowHeadFeatureCollection();
+    method public com.mapbox.geojson.FeatureCollection getArrowShaftFeatureCollection();
+  }
+
+  public static final class RouteArrowState.ArrowModificationState.ArrowRemovedState extends com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState {
+    ctor public RouteArrowState.ArrowModificationState.ArrowRemovedState(com.mapbox.geojson.FeatureCollection arrowShaftFeatureCollection, com.mapbox.geojson.FeatureCollection arrowHeadFeatureCollection);
+    method public com.mapbox.geojson.FeatureCollection getArrowHeadFeatureCollection();
+    method public com.mapbox.geojson.FeatureCollection getArrowShaftFeatureCollection();
+  }
+
+  public static final class RouteArrowState.ArrowModificationState.ClearArrowsState extends com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState {
+    ctor public RouteArrowState.ArrowModificationState.ClearArrowsState(com.mapbox.geojson.FeatureCollection arrowShaftFeatureCollection, com.mapbox.geojson.FeatureCollection arrowHeadFeatureCollection);
+    method public com.mapbox.geojson.FeatureCollection getArrowHeadFeatureCollection();
+    method public com.mapbox.geojson.FeatureCollection getArrowShaftFeatureCollection();
+  }
+
+  public static final class RouteArrowState.ArrowModificationState.InvalidPointErrorState extends com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState.ArrowModificationState {
+    ctor public RouteArrowState.ArrowModificationState.InvalidPointErrorState(String message);
+    method public String getMessage();
   }
 
   public static final class RouteArrowState.UpdateManeuverArrowState extends com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowState {

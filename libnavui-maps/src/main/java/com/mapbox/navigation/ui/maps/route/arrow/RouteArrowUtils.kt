@@ -146,7 +146,7 @@ internal object RouteArrowUtils {
             )
             .lineCap(LineCap.ROUND)
             .lineJoin(LineJoin.ROUND)
-            .visibility(Visibility.NONE)
+            .visibility(Visibility.VISIBLE)
             .lineOpacity(
                 Expression.step {
                     zoom()
@@ -192,7 +192,7 @@ internal object RouteArrowUtils {
                     )
                 }
             )
-            .visibility(Visibility.NONE)
+            .visibility(Visibility.VISIBLE)
             .iconOpacity(
                 Expression.step {
                     zoom()
@@ -231,7 +231,7 @@ internal object RouteArrowUtils {
             )
             .lineCap(LineCap.ROUND)
             .lineJoin(LineJoin.ROUND)
-            .visibility(Visibility.NONE)
+            .visibility(Visibility.VISIBLE)
             .lineOpacity(
                 Expression.step {
                     zoom()
@@ -277,7 +277,7 @@ internal object RouteArrowUtils {
                     )
                 }
             )
-            .visibility(Visibility.NONE)
+            .visibility(Visibility.VISIBLE)
             .iconOpacity(
                 Expression.step {
                     zoom()
