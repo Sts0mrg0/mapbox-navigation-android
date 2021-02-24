@@ -6,7 +6,7 @@ parameters:
     default: false
   mapbox_navigation_native_snapshot:
     type: string
-    default: 42.0.1
+    default: sf-android-downstream-8-SNAPSHOT
 
 #-------------------------------
 #---------- EXECUTORS ----------
