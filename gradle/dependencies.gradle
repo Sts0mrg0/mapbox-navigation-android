@@ -6,12 +6,15 @@ ext {
       compileSdkVersion       : 29
   ]
 
+  def mapboxNavigatorVersion = "42.0.1"
+  //if (System.getenv('FORCED_MAPBOX_NAVIGATION_NATIVE_'))
+
   version = [
       mapboxMapSdk              : '10.0.0-beta.13',
       mapboxSdkServices         : '5.9.0-alpha.1',
       mapboxEvents              : '6.2.2',
       mapboxCore                : '3.1.1',
-      mapboxNavigator           : '42.0.1',
+      mapboxNavigator           : "${mapboxNavigatorVersion}",
       mapboxCommonNative        : '10.0.0-beta.9.1',
       mapboxCrashMonitor        : '2.0.0',
       mapboxAnnotationPlugin    : '0.8.0',
