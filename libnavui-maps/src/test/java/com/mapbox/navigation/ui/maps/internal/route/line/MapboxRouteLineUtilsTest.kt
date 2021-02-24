@@ -18,6 +18,7 @@ import com.mapbox.navigation.testing.FileUtils.loadJsonFixture
 import com.mapbox.navigation.ui.base.internal.model.route.RouteConstants
 import com.mapbox.navigation.ui.base.model.route.RouteLayerConstants
 import com.mapbox.navigation.ui.maps.common.ShadowValueConverter
+import com.mapbox.navigation.ui.maps.internal.route.line.MapboxRouteLineUtils.getRestrictedRouteSections
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineOptions
 import com.mapbox.navigation.ui.maps.route.line.model.RouteLineColorResources
 import com.mapbox.navigation.ui.maps.route.line.model.RouteLineExpressionData
@@ -1099,8 +1100,31 @@ class MapboxRouteLineUtilsTest {
         assertEquals(resources.alternativeRouteDefaultColor, result)
     }
 
+    @Test
+    fun getRestrictedRouteSectionsTest() {
+        val route = loadRoute("route-with-restrictions.json")
+
+        val result = getRestrictedRouteSections(route)
+
+        assertEquals(2, result.size)
+        assertEquals(25, result[0].size)
+        assertEquals(3, result[1].size)
+        assertEquals(51.045253, result[0].first().latitude(), 0.0)
+        assertEquals(16.983161, result[0].first().longitude(), 0.0)
+        assertEquals(51.043472, result[0].last().latitude(), 0.0)
+        assertEquals(16.985809, result[0].last().longitude(), 0.0)
+        assertEquals(51.036888, result[1].first().latitude(), 0.0)
+        assertEquals(16.995361, result[1].first().longitude(), 0.0)
+        assertEquals(51.034763, result[1].last().latitude(), 0.0)
+        assertEquals(16.99843, result[1].last().longitude(), 0.0)
+    }
+
     private fun getMultilegRoute(): DirectionsRoute {
-        val routeAsJson = loadJsonFixture("multileg_route.json")
+        return loadRoute("multileg_route.json")
+    }
+
+    private fun loadRoute(routeFileName: String): DirectionsRoute {
+        val routeAsJson = loadJsonFixture(routeFileName)
         return DirectionsRoute.fromJson(routeAsJson)
     }
 }

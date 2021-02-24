@@ -316,6 +316,36 @@ object MapboxRouteLineUtils {
         return routeLineTrafficData
     }
 
+    internal fun getRestrictedRouteSections(route: DirectionsRoute): List<List<Point>> {
+        val coordinates = LineString.fromPolyline(
+            route.geometry() ?: "",
+            Constants.PRECISION_6
+        ).coordinates()
+        val restrictedSections = mutableListOf<List<Point>>()
+        var geoIndex :Int? = null
+
+        route.legs()
+            ?.mapNotNull { it.steps() }
+            ?.flatten()
+            ?.mapNotNull { it.intersections() }
+            ?.flatten()
+            ?.forEach { stepIntersection ->
+            if (stepIntersection.classes()?.contains("restricted") == true) {
+                if (geoIndex == null) {
+                    geoIndex = stepIntersection.geometryIndex()
+                }
+            } else {
+                if (geoIndex != null && stepIntersection.geometryIndex() != null) {
+                    val section = coordinates.subList(geoIndex!!, stepIntersection.geometryIndex()!! + 1)
+                    restrictedSections.add(section)
+                    geoIndex = null
+                }
+            }
+        }
+
+        return restrictedSections
+    }
+
     private fun getRoadClassForIndex(roadClassArray: Array<String?>, index: Int): String? {
         return if (roadClassArray.size > index) {
             roadClassArray.slice(0..index).last { it != null }
