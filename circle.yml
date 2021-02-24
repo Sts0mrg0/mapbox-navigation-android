@@ -24,7 +24,25 @@ executors:
 #-------------------------------
 workflows:
   version: 2
+  mapbox-navigation-native-validation:
+    when: << pipeline.parameters.mapbox_navigation_native_upstream >>
+    jobs: 
+      - prepare-and-assemble
+      - unit-tests:
+          requires:
+            - prepare-and-assemble
+      - ui-robo-tests:
+          requires:
+            - prepare-and-assemble
+      - internal-instrumentation-tests:
+          requires:
+            - prepare-and-assemble
+      - instrumentation-tests:
+          requires:
+            - prepare-and-assemble
   default:
+    when:
+      not: << pipeline.parameters.mapbox_navigation_native_upstream >>
     jobs:
       - prepare-and-assemble
       - static-analysis:
