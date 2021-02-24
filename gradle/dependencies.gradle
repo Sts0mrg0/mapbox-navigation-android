@@ -7,7 +7,9 @@ ext {
   ]
 
   def mapboxNavigatorVersion = "42.0.1"
-  //if (System.getenv('FORCED_MAPBOX_NAVIGATION_NATIVE_'))
+  if (System.getenv("FORCE_MAPBOX_NAVIGATION_NATIVE_VERSION") && System.getenv("FORCE_MAPBOX_NAVIGATION_NATIVE_VERSION") != '') {
+      mapboxNavigatorVersion = System.getenv("FORCE_MAPBOX_NAVIGATION_NATIVE_VERSION")
+  }
 
   version = [
       mapboxMapSdk              : '10.0.0-beta.13',
