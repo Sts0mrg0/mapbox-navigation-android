@@ -316,34 +316,48 @@ object MapboxRouteLineUtils {
         return routeLineTrafficData
     }
 
-    internal fun getRestrictedRouteSections(route: DirectionsRoute): List<List<Point>> {
-        val coordinates = LineString.fromPolyline(
-            route.geometry() ?: "",
-            Constants.PRECISION_6
-        ).coordinates()
-        val restrictedSections = mutableListOf<List<Point>>()
-        var geoIndex :Int? = null
+    // todo make internal
+    @SuppressLint("LogNotTimber")
+    fun getRestrictedRouteSections(route: DirectionsRoute): List<List<Point>> {
+        try {
+            val coordinates = LineString.fromPolyline(
+                route.geometry() ?: "",
+                Constants.PRECISION_6
+            ).coordinates()
+            val restrictedSections = mutableListOf<List<Point>>()
+            var geoIndex: Int? = null
 
-        route.legs()
-            ?.mapNotNull { it.steps() }
-            ?.flatten()
-            ?.mapNotNull { it.intersections() }
-            ?.flatten()
-            ?.forEach { stepIntersection ->
-            if (stepIntersection.classes()?.contains("restricted") == true) {
-                if (geoIndex == null) {
-                    geoIndex = stepIntersection.geometryIndex()
+            route.legs()
+                ?.mapNotNull { it.steps() }
+                ?.flatten()
+                ?.mapNotNull { it.intersections() }
+                ?.flatten()
+                ?.forEach { stepIntersection ->
+                    if (stepIntersection.classes()?.contains("restricted") == true) {
+                        if (geoIndex == null) {
+                            geoIndex = stepIntersection.geometryIndex()
+                        }
+                    } else {
+                        if (geoIndex != null && stepIntersection.geometryIndex() != null) {
+                            val section = coordinates.subList(
+                                geoIndex!!,
+                                stepIntersection.geometryIndex()!! + 1
+                            )
+                            restrictedSections.add(section)
+                            geoIndex = null
+                        }
+                    }
                 }
-            } else {
-                if (geoIndex != null && stepIntersection.geometryIndex() != null) {
-                    val section = coordinates.subList(geoIndex!!, stepIntersection.geometryIndex()!! + 1)
-                    restrictedSections.add(section)
-                    geoIndex = null
-                }
-            }
+            return restrictedSections
+        } catch (ex: Exception) {
+            Log.e(
+                "MapboxRouteLineUtils",
+                "Failed to extract route restrictions. " +
+                    "This could be caused by missing data in the DirectionsRoute",
+                ex
+            )
         }
-
-        return restrictedSections
+        return listOf()
     }
 
     private fun getRoadClassForIndex(roadClassArray: Array<String?>, index: Int): String? {

@@ -22,6 +22,7 @@ import com.mapbox.navigation.examples.core.camera.MapboxCameraAnimationsActivity
 import com.mapbox.navigation.examples.core.databinding.LayoutActivityMainBinding
 import com.mapbox.navigation.examples.util.LocationPermissionsHelper
 import com.mapbox.navigation.examples.util.LocationPermissionsHelper.Companion.areLocationPermissionsGranted
+import com.mapbox.navigation.examples.util.RouteDrawingActivity
 
 class MainActivity : AppCompatActivity(), PermissionsListener {
 
@@ -96,6 +97,11 @@ class MainActivity : AppCompatActivity(), PermissionsListener {
                 getString(R.string.title_voice),
                 getString(R.string.description_voice),
                 MapboxVoiceActivity::class.java
+            ),
+            SampleItem(
+                getString(R.string.title_draw_utility),
+                getString(R.string.description_draw_utility),
+                RouteDrawingActivity::class.java
             )
         )
     }

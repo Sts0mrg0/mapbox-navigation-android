@@ -1107,16 +1107,16 @@ class MapboxRouteLineUtilsTest {
         val result = getRestrictedRouteSections(route)
 
         assertEquals(2, result.size)
-        assertEquals(25, result[0].size)
-        assertEquals(3, result[1].size)
-        assertEquals(51.045253, result[0].first().latitude(), 0.0)
-        assertEquals(16.983161, result[0].first().longitude(), 0.0)
-        assertEquals(51.043472, result[0].last().latitude(), 0.0)
-        assertEquals(16.985809, result[0].last().longitude(), 0.0)
-        assertEquals(51.036888, result[1].first().latitude(), 0.0)
-        assertEquals(16.995361, result[1].first().longitude(), 0.0)
-        assertEquals(51.034763, result[1].last().latitude(), 0.0)
-        assertEquals(16.99843, result[1].last().longitude(), 0.0)
+        assertEquals(2, result[0].size)
+        assertEquals(2, result[1].size)
+        assertEquals(37.971947, result[0].first().latitude(), 0.0)
+        assertEquals(-122.526159, result[0].first().longitude(), 0.0)
+        assertEquals(37.971984, result[0].last().latitude(), 0.0)
+        assertEquals(-122.52645, result[0].last().longitude(), 0.0)
+        assertEquals(37.972037, result[1].first().latitude(), 0.0)
+        assertEquals(-122.526951, result[1].first().longitude(), 0.0)
+        assertEquals(37.972061, result[1].last().latitude(), 0.0)
+        assertEquals(-122.527206, result[1].last().longitude(), 0.0)
     }
 
     private fun getMultilegRoute(): DirectionsRoute {
