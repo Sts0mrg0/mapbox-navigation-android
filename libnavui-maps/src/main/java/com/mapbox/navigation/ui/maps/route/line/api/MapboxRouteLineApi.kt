@@ -13,15 +13,22 @@ import com.mapbox.maps.extension.style.layers.properties.generated.Visibility
 import com.mapbox.navigation.base.trip.model.RouteProgress
 import com.mapbox.navigation.base.trip.model.RouteProgressState
 import com.mapbox.navigation.ui.base.internal.model.route.RouteConstants
+import com.mapbox.navigation.ui.base.model.Expected
 import com.mapbox.navigation.ui.base.model.route.RouteLayerConstants
 import com.mapbox.navigation.ui.base.util.MapboxNavigationConsumer
 import com.mapbox.navigation.ui.maps.internal.route.line.MapboxRouteLineUtils
+import com.mapbox.navigation.ui.maps.route.line.model.ClosestRouteValue
+import com.mapbox.navigation.ui.maps.route.line.model.LayerVisibilityUpdate
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineOptions
 import com.mapbox.navigation.ui.maps.route.line.model.RouteFeatureData
 import com.mapbox.navigation.ui.maps.route.line.model.RouteLine
+import com.mapbox.navigation.ui.maps.route.line.model.RouteLineClearValue
+import com.mapbox.navigation.ui.maps.route.line.model.RouteLineError
 import com.mapbox.navigation.ui.maps.route.line.model.RouteLineExpressionData
-import com.mapbox.navigation.ui.maps.route.line.model.RouteLineState
+import com.mapbox.navigation.ui.maps.route.line.model.RouteLineNoUpdate
+import com.mapbox.navigation.ui.maps.route.line.model.RouteSetValue
 import com.mapbox.navigation.ui.maps.route.line.model.VanishingPointState
+import com.mapbox.navigation.ui.maps.route.line.model.VanishingRouteLineUpdateValue
 import com.mapbox.navigation.ui.utils.internal.ifNonNull
 import com.mapbox.navigation.utils.internal.ThreadController
 import com.mapbox.turf.TurfConstants
@@ -167,7 +174,7 @@ class MapboxRouteLineApi(
      * @return a state which contains the side effects to be applied to the map displaying the
      * newly designated route line.
      */
-    fun updateToPrimaryRoute(route: DirectionsRoute): RouteLineState.RouteSetState {
+    fun updateToPrimaryRoute(route: DirectionsRoute): Expected<RouteSetValue, RouteLineError> {
         val newRoutes = directionsRoutes.filter { it != route }.toMutableList().also {
             it.add(0, route)
         }
@@ -184,7 +191,7 @@ class MapboxRouteLineApi(
      *
      * @return a state which contains the side effects to be applied to the map
      */
-    fun setRoutes(newRoutes: List<RouteLine>): RouteLineState.RouteSetState {
+    fun setRoutes(newRoutes: List<RouteLine>): Expected<RouteSetValue, RouteLineError> {
         val routes = newRoutes.map(RouteLine::route)
         val featureDataProvider: () -> List<RouteFeatureData> =
             MapboxRouteLineUtils.getRouteLineFeatureDataProvider(newRoutes)
@@ -195,7 +202,7 @@ class MapboxRouteLineApi(
      * @return a state which contains the side effects to be applied to the map. The data
      * can be used to draw the current route line(s) on the map.
      */
-    fun getRouteDrawData(): RouteLineState.RouteSetState {
+    fun getRouteDrawData(): Expected<RouteSetValue, RouteLineError> {
         val featureDataProvider: () -> List<RouteFeatureData> =
             MapboxRouteLineUtils.getRouteFeatureDataProvider(directionsRoutes)
         return buildDrawRoutesState(featureDataProvider)
@@ -208,15 +215,15 @@ class MapboxRouteLineApi(
      *
      * @param point representing the current position of the puck
      *
-     * @return a state representing the updates to the route line's appearance or null if there is
+     * @return a value representing the updates to the route line's appearance or null if there is
      * no update to render
      */
-    fun updateTraveledRouteLine(point: Point): RouteLineState.VanishingRouteLineUpdateState? {
+    fun updateTraveledRouteLine(point: Point): Expected<VanishingRouteLineUpdateValue, RouteLineNoUpdate> {
         if (routeLineOptions.vanishingRouteLine?.vanishingPointState ==
             VanishingPointState.DISABLED || System.nanoTime() - lastIndexUpdateTimeNano >
             RouteConstants.MAX_ELAPSED_SINCE_INDEX_UPDATE_NANO
         ) {
-            return null
+            return Expected.Failure(RouteLineNoUpdate())
         }
 
         val routeLineExpressions =
@@ -227,11 +234,13 @@ class MapboxRouteLineApi(
             )
 
         return when (routeLineExpressions) {
-            null -> null
-            else -> RouteLineState.VanishingRouteLineUpdateState(
+            null -> Expected.Failure(RouteLineNoUpdate())
+            else -> Expected.Success(
+                VanishingRouteLineUpdateValue(
                 routeLineExpressions.trafficLineExpression,
                 routeLineExpressions.routeLineExpression,
                 routeLineExpressions.routeLineCasingExpression
+                )
             )
         }
     }
@@ -242,17 +251,20 @@ class MapboxRouteLineApi(
      * @return a state representing the side effects to be rendered on the map. In this case
      * the map should appear without any route lines.
      */
-    fun clearRouteLine(): RouteLineState.ClearRouteLineState {
+    fun clearRouteLine(): Expected<RouteLineClearValue, RouteLineError> {
         routeLineOptions.vanishingRouteLine?.vanishPointOffset = 0.0
         directionsRoutes.clear()
         routeFeatureData.clear()
         routeLineExpressionData.clear()
         routeLineOptions.vanishingRouteLine?.clear()
-        return RouteLineState.ClearRouteLineState(
-            FeatureCollection.fromFeatures(listOf()),
-            FeatureCollection.fromFeatures(listOf()),
-            FeatureCollection.fromFeatures(listOf()),
-            FeatureCollection.fromFeatures(listOf())
+
+        return Expected.Success(
+            RouteLineClearValue(
+                FeatureCollection.fromFeatures(listOf()),
+                FeatureCollection.fromFeatures(listOf()),
+                FeatureCollection.fromFeatures(listOf()),
+                FeatureCollection.fromFeatures(listOf())
+            )
         )
     }
 
@@ -266,7 +278,7 @@ class MapboxRouteLineApi(
      * @return a state representing the side effects to be rendered on the map which will update
      * the appearance of the route line or null if the vanishing route line feature is inactive.
      */
-    fun setVanishingOffset(offset: Double): RouteLineState.VanishingRouteLineUpdateState? {
+    fun setVanishingOffset(offset: Double): Expected<VanishingRouteLineUpdateValue, RouteLineNoUpdate> {
         routeLineOptions.vanishingRouteLine?.vanishPointOffset = offset
         return if (offset >= 0) {
             val trafficLineExpression = MapboxRouteLineUtils.getTrafficLineExpression(
@@ -287,13 +299,15 @@ class MapboxRouteLineApi(
                     routeLineOptions.resourceProvider.routeLineColorResources.routeCasingColor
                 )
 
-            RouteLineState.VanishingRouteLineUpdateState(
-                trafficLineExpression,
-                routeLineExpression,
-                routeLineCasingExpression
+            Expected.Success(
+                VanishingRouteLineUpdateValue(
+                    trafficLineExpression,
+                    routeLineExpression,
+                    routeLineCasingExpression
+                )
             )
         } else {
-            null
+            Expected.Failure(RouteLineNoUpdate())
         }
     }
 
@@ -313,12 +327,13 @@ class MapboxRouteLineApi(
      * @return a state that represents the side effects that when rendered will
      * set the primary route to a state of visible.
      */
-    fun showPrimaryRoute(): RouteLineState.UpdateLayerVisibilityState {
-        return RouteLineState.UpdateLayerVisibilityState(
-            listOf(
-                Pair(RouteLayerConstants.PRIMARY_ROUTE_TRAFFIC_LAYER_ID, Visibility.VISIBLE),
-                Pair(RouteLayerConstants.PRIMARY_ROUTE_LAYER_ID, Visibility.VISIBLE),
-                Pair(RouteLayerConstants.PRIMARY_ROUTE_CASING_LAYER_ID, Visibility.VISIBLE)
+    fun showPrimaryRoute(): Expected<LayerVisibilityUpdate, RouteLineError> {
+        return Expected.Success(LayerVisibilityUpdate(
+                listOf(
+                    Pair(RouteLayerConstants.PRIMARY_ROUTE_TRAFFIC_LAYER_ID, Visibility.VISIBLE),
+                    Pair(RouteLayerConstants.PRIMARY_ROUTE_LAYER_ID, Visibility.VISIBLE),
+                    Pair(RouteLayerConstants.PRIMARY_ROUTE_CASING_LAYER_ID, Visibility.VISIBLE)
+                )
             )
         )
     }
@@ -327,12 +342,13 @@ class MapboxRouteLineApi(
      * @return a state that represents the side effects that when rendered will
      * set the primary route to a state of not visible.
      */
-    fun hidePrimaryRoute(): RouteLineState.UpdateLayerVisibilityState {
-        return RouteLineState.UpdateLayerVisibilityState(
-            listOf(
-                Pair(RouteLayerConstants.PRIMARY_ROUTE_TRAFFIC_LAYER_ID, Visibility.NONE),
-                Pair(RouteLayerConstants.PRIMARY_ROUTE_LAYER_ID, Visibility.NONE),
-                Pair(RouteLayerConstants.PRIMARY_ROUTE_CASING_LAYER_ID, Visibility.NONE)
+    fun hidePrimaryRoute(): Expected<LayerVisibilityUpdate, RouteLineError> {
+        return Expected.Success(LayerVisibilityUpdate(
+                listOf(
+                    Pair(RouteLayerConstants.PRIMARY_ROUTE_TRAFFIC_LAYER_ID, Visibility.NONE),
+                    Pair(RouteLayerConstants.PRIMARY_ROUTE_LAYER_ID, Visibility.NONE),
+                    Pair(RouteLayerConstants.PRIMARY_ROUTE_CASING_LAYER_ID, Visibility.NONE)
+                )
             )
         )
     }
@@ -341,15 +357,16 @@ class MapboxRouteLineApi(
      * @return a state that represents the side effects that when rendered will
      * set the alternative route(s) to a state of visible.
      */
-    fun showAlternativeRoutes(): RouteLineState.UpdateLayerVisibilityState {
-        return RouteLineState.UpdateLayerVisibilityState(
-            listOf(
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_LAYER_ID, Visibility.VISIBLE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_CASING_LAYER_ID, Visibility.VISIBLE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_LAYER_ID, Visibility.VISIBLE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_CASING_LAYER_ID, Visibility.VISIBLE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_TRAFFIC_LAYER_ID, Visibility.VISIBLE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_TRAFFIC_LAYER_ID, Visibility.VISIBLE)
+    fun showAlternativeRoutes(): Expected<LayerVisibilityUpdate, RouteLineError> {
+        return Expected.Success(LayerVisibilityUpdate(
+                listOf(
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_LAYER_ID, Visibility.VISIBLE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_CASING_LAYER_ID, Visibility.VISIBLE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_LAYER_ID, Visibility.VISIBLE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_CASING_LAYER_ID, Visibility.VISIBLE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_TRAFFIC_LAYER_ID, Visibility.VISIBLE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_TRAFFIC_LAYER_ID, Visibility.VISIBLE)
+                )
             )
         )
     }
@@ -358,15 +375,16 @@ class MapboxRouteLineApi(
      * @return a state that represents the side effects that when rendered will
      * set the alternative route(s) to a state of not visible.
      */
-    fun hideAlternativeRoutes(): RouteLineState.UpdateLayerVisibilityState {
-        return RouteLineState.UpdateLayerVisibilityState(
-            listOf(
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_LAYER_ID, Visibility.NONE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_CASING_LAYER_ID, Visibility.NONE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_LAYER_ID, Visibility.NONE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_CASING_LAYER_ID, Visibility.NONE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_TRAFFIC_LAYER_ID, Visibility.NONE),
-                Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_TRAFFIC_LAYER_ID, Visibility.NONE)
+    fun hideAlternativeRoutes(): Expected<LayerVisibilityUpdate, RouteLineError> {
+        return Expected.Success(LayerVisibilityUpdate(
+                listOf(
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_LAYER_ID, Visibility.NONE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_CASING_LAYER_ID, Visibility.NONE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_LAYER_ID, Visibility.NONE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_CASING_LAYER_ID, Visibility.NONE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE1_TRAFFIC_LAYER_ID, Visibility.NONE),
+                    Pair(RouteLayerConstants.ALTERNATIVE_ROUTE2_TRAFFIC_LAYER_ID, Visibility.NONE)
+                )
             )
         )
     }
@@ -389,11 +407,11 @@ class MapboxRouteLineApi(
         target: Point,
         mapboxMap: MapboxMap,
         padding: Float,
-        resultConsumer: MapboxNavigationConsumer<RouteLineState.ClosestRouteState>
+        resultConsumer: MapboxNavigationConsumer<Expected<ClosestRouteValue, RouteLineError>>
     ) {
         ThreadController.getMainScopeAndRootJob().scope.launch {
             val state = findClosestRoute(target, mapboxMap, padding)
-            resultConsumer.accept(state)
+            resultConsumer.accept(Expected.Success(state))
         }
     }
 
@@ -414,7 +432,7 @@ class MapboxRouteLineApi(
         target: Point,
         mapboxMap: MapboxMap,
         padding: Float,
-    ): RouteLineState.ClosestRouteState {
+    ): ClosestRouteValue {
         val mapClickPoint = mapboxMap.pixelForCoordinate(target)
         val leftFloat = (mapClickPoint.x - padding)
         val rightFloat = (mapClickPoint.x + padding)
@@ -439,7 +457,7 @@ class MapboxRouteLineApi(
         )
 
         return if (clickPointFeatureIndex >= 0) {
-            RouteLineState.ClosestRouteState(clickPointFeatureIndex)
+            ClosestRouteValue(clickPointFeatureIndex)
         } else {
             val clickRectFeatureIndex = queryMapForFeatureIndex(
                 mapboxMap,
@@ -453,7 +471,7 @@ class MapboxRouteLineApi(
                 features
             )
             if (clickRectFeatureIndex >= 0) {
-                RouteLineState.ClosestRouteState(clickRectFeatureIndex)
+                ClosestRouteValue(clickRectFeatureIndex)
             } else {
                 val index = queryMapForFeatureIndex(
                     mapboxMap,
@@ -464,7 +482,7 @@ class MapboxRouteLineApi(
                     ),
                     features
                 )
-                RouteLineState.ClosestRouteState(index)
+                ClosestRouteValue(index)
             }
         }
     }
@@ -600,7 +618,7 @@ class MapboxRouteLineApi(
     private fun setNewRouteData(
         newRoutes: List<DirectionsRoute>,
         featureDataProvider: () -> List<RouteFeatureData>
-    ): RouteLineState.RouteSetState {
+    ): Expected<RouteSetValue, RouteLineError> {
         directionsRoutes.clear()
         directionsRoutes.addAll(newRoutes)
         primaryRoute = newRoutes.firstOrNull()
@@ -610,7 +628,7 @@ class MapboxRouteLineApi(
 
     private fun buildDrawRoutesState(
         featureDataProvider: () -> List<RouteFeatureData>
-    ): RouteLineState.RouteSetState {
+    ): Expected<RouteSetValue, RouteLineError> {
         routeFeatureData.clear()
         routeFeatureData.addAll(featureDataProvider())
         val partitionedRoutes = routeFeatureData.partition { it.route == directionsRoutes.first() }
@@ -695,16 +713,18 @@ class MapboxRouteLineApi(
                 listOf()
             )
 
-        return RouteLineState.RouteSetState(
-            primaryRouteSource,
-            trafficLineExpression,
-            routeLineExpression,
-            routeLineCasingExpression,
-            alternativeRoute1TrafficExpression,
-            alternativeRoute2TrafficExpression,
-            alternativeRoute1FeatureCollection,
-            alternativeRoute2FeatureCollection,
-            wayPointsFeatureCollection
+        return Expected.Success(
+            RouteSetValue(
+                primaryRouteSource,
+                trafficLineExpression,
+                routeLineExpression,
+                routeLineCasingExpression,
+                alternativeRoute1TrafficExpression,
+                alternativeRoute2TrafficExpression,
+                alternativeRoute1FeatureCollection,
+                alternativeRoute2FeatureCollection,
+                wayPointsFeatureCollection
+            )
         )
     }
 }
